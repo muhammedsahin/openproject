@@ -10,12 +10,12 @@ import {take} from "rxjs/operators";
 import {WorkPackageChangeset} from "core-components/wp-edit/work-package-changeset";
 import {WorkPackageResource} from "core-app/modules/hal/resources/work-package-resource";
 import {SubprojectBoardHeaderComponent} from "core-app/modules/boards/board/board-actions/subproject/subproject-board-header.component";
+import {CachedBoardActionService} from "core-app/modules/boards/board/board-actions/cached-board-action.service";
+import {StatusResource} from "core-app/modules/hal/resources/status-resource";
 
 @Injectable()
-export class BoardSubprojectActionService extends BoardActionService {
+export class BoardSubprojectActionService extends CachedBoardActionService {
   filterName = 'onlySubproject';
-
-  private subprojects = input<HalResource[]>();
 
   get localizedName() {
     return this.I18n.t('js.work_packages.properties.subproject');
@@ -36,22 +36,15 @@ export class BoardSubprojectActionService extends BoardActionService {
     changeset.setValue('project', { href: href });
   }
 
-  protected loadAvailable():Promise<HalResource[]> {
+  protected loadUncached():Promise<HalResource[]> {
     const currentProjectId = this.currentProject.id!;
-    this.subprojects.putFromPromiseIfPristine(() =>
-      this
+    return this
         .apiV3Service
         .projects
         .filtered(buildApiV3Filter('ancestor', '=', [currentProjectId]))
         .get()
         .toPromise()
-        .then((collection:CollectionResource<UserResource>) => collection.elements)
-    );
-
-    return this.subprojects
-      .values$()
-      .pipe(take(1))
-      .toPromise();
+        .then((collection:CollectionResource<UserResource>) => collection.elements);
   }
 
 }
